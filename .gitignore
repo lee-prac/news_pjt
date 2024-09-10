@@ -1,0 +1,34 @@
+# Python 관련
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.venv
+ENV/
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Django 관련
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# 가상 환경
+.venv/
+venv/
+env/
+
+# IDE/편집기 관련 파일
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# OS 관련 파일
+.DS_Store
+Thumbs.db
