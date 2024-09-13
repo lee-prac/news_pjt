@@ -18,8 +18,8 @@ media/
 staticfiles/
 
 # 가상 환경
-.venv/
-venv/
+.test/
+test/
 env/
 
 # IDE/편집기 관련 파일
