@@ -16,7 +16,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "author", "created_at"]
 
 
-class ArticleCreateSerializer(serializers.ModelSerializer):
+class ArticleDetailSerializer(serializers.ModelSerializer):
     # author를 "id" 가 아닌 "user_id" 로 보여주기.
     author = serializers.StringRelatedField(read_only=True)
 
