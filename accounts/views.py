@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
 from .models import CustomUser
@@ -73,3 +72,15 @@ class LogoutView(APIView):
         response = Response({"message": "로그아웃 되었습니다."}, status=200)
         response.delete_cookie("refreshtoken")
         return response
+
+
+# 회원탈퇴
+class WithdrawView(APIView):
+    def delete(self, request):
+        password = request.data.get("password")
+        if not request.user.check_password(password):
+            return Response({"message": "비밀번호를 다시 입력해주세요."}, status=400)
+        
+        request.user.is_active = False
+        request.user.save()
+        return Response({"message": "계정이 성공적으로 탈퇴되었습니다."}, status=204)
