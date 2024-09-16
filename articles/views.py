@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
@@ -8,9 +9,10 @@ from django.db.models import Q
 from .models import Article, Category
 from .serializers import (
     ArticleListSerializer,
-    ArticleCreateSerializer,
+    ArticleDetailSerializer,
     CategorySerializer,
 )
+from django.shortcuts import get_object_or_404
 
 
 class ArticleListView(ListAPIView):
@@ -55,8 +57,44 @@ class ArticleListView(ListAPIView):
             category_id=category_id_text,
             author=request.user,  # 요청한 사용자를 author로 설정
         )
-        serializer = ArticleCreateSerializer(article)
+        serializer = ArticleDetailSerializer(article)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ArticleDetailView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, pk):
+        article = get_object_or_404(Article, pk=pk)
+        serializer = ArticleDetailSerializer(article)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        article = get_object_or_404(Article, pk=pk)
+
+        if article.author != request.user:
+            return Response(
+                data={"detail": "본인의 글만 수정할 수 있습니다!"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = ArticleDetailSerializer(article, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        article = get_object_or_404(Article, pk=pk)
+
+        if article.author != request.user:
+            return Response(
+                data={"detail": "본인의 글만 삭제할 수 있습니다!"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        article.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CategoryListView(ListAPIView):
