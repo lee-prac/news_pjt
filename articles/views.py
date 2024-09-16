@@ -1,11 +1,14 @@
 from django.shortcuts import render
+from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from .models import Article, Category
-from .serializers import ArticleSerializer, CategorySerializer
+from .serializers import ArticleSerializer, CategorySerializer, DetailSerializer
+from django.shortcuts import get_object_or_404
 
 
 
@@ -14,7 +17,7 @@ class ArticleListView(ListAPIView):
     pagination_class = PageNumberPagination
     serializer_class = ArticleSerializer
 
-    def get_queryset(self):
+    def get_queryset(self): # 검색
         search = self.request.query_params.get('search')
         if search:
             return Article.objects.filter(
@@ -40,6 +43,27 @@ class ArticleListView(ListAPIView):
     #     products = Article.objects.all()
     #     serializer = ArticleSerializer(products, many=True)
     #     return Response(serializer.data)
+
+
+class ArticleDetailView(APIView):
+    def get(self, request, pk):
+        post = get_object_or_404(post, pk=pk)
+        serializer = DetailSerializer(post)
+        return Response(serializer.data)
+    
+    def put(self, request, pk):
+        post = get_object_or_404(post, pk=pk)
+        serializer = DetailSerializer(post, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        post = get_object_or_404(post, pk=pk)
+        post.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 class ArticleListAPIView(ListAPIView):

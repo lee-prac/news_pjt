@@ -19,3 +19,8 @@ class ArticleSerializer(serializers.ModelSerializer):
         ret["category"] = CategorySerializer(instance.category).data
         return ret
 
+
+class DetailSerializer(serializers.ModelSerializer):
+    model = Article
+    fields = "__all__"
+
