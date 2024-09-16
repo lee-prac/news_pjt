@@ -4,7 +4,7 @@ from .managers import CustomUserManager
 
 class CustomUser(AbstractBaseUser):
     username = None
-    user_id = models.CharField(max_length=10, unique=True)
+    user_id = models.CharField(max_length=10, unique=True, null=True)
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=10)
     nickname = models.CharField(max_length=10)
