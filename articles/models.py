@@ -21,14 +21,12 @@ class Article(TimeStampedModel):
         related_name="user_articles",  # 필요없으면 삭제하자
     )
     category = models.ForeignKey(
-        'Category',
+        to='Category',
         on_delete=models.CASCADE,
         related_name='articles',
         null=True,
         blank=True
         )
-    created_date = models.ForeignKey(auto_now_add=True)
-    update_date = models.ForeignKey(update_now_add=True)
 
     def __str__(self):
         return self.title
