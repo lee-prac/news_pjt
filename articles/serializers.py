@@ -8,7 +8,15 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ArticleSerializer(serializers.ModelSerializer):
+class ArticleListSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Article
+        fields = ["id", "title", "author", "created_at"]
+
+
+class ArticleCreateSerializer(serializers.ModelSerializer):
     # author를 "id" 가 아닌 "user_id" 로 보여주기.
     author = serializers.StringRelatedField(read_only=True)
 

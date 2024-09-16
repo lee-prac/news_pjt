@@ -2,16 +2,21 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.generics import ListAPIView
-from django.db.models import Q
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
 from .models import Article, Category
-from .serializers import ArticleSerializer, CategorySerializer
+from .serializers import (
+    ArticleListSerializer,
+    ArticleCreateSerializer,
+    CategorySerializer,
+)
 
 
 class ArticleListView(ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = PageNumberPagination
-    serializer_class = ArticleSerializer
+    serializer_class = ArticleListSerializer
 
     def get_queryset(self):
         search = self.request.query_params.get("search")
@@ -38,6 +43,10 @@ class ArticleListView(ListAPIView):
                 data={"message": "내용은 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        try:
+            category = Category.objects.get(id=category_id_text)
+        except Category.DoesNotExist:
+            raise ValidationError({"category": "그런 카테고리는 없습니다!"})
 
         article = Article.objects.create(
             title=title,
@@ -46,7 +55,7 @@ class ArticleListView(ListAPIView):
             category_id=category_id_text,
             author=request.user,  # 요청한 사용자를 author로 설정
         )
-        serializer = ArticleSerializer(article)
+        serializer = ArticleCreateSerializer(article)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
