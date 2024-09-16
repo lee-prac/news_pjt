@@ -71,7 +71,14 @@ class ArticleDetailView(APIView):
 
     def put(self, request, pk):
         article = get_object_or_404(Article, pk=pk)
-        serializer = ArticleDetailSerializer(article, data=request.data)
+
+        if article.author != request.user:
+            return Response(
+                data={"detail": "본인의 글만 수정할 수 있습니다!"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = ArticleDetailSerializer(article, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -79,6 +86,13 @@ class ArticleDetailView(APIView):
 
     def delete(self, request, pk):
         article = get_object_or_404(Article, pk=pk)
+
+        if article.author != request.user:
+            return Response(
+                data={"detail": "본인의 글만 삭제할 수 있습니다!"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         article.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
