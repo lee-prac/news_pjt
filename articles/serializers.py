@@ -18,4 +18,3 @@ class ArticleSerializer(serializers.ModelSerializer):
         ret = super().to_representation(instance)
         ret["category"] = CategorySerializer(instance.category).data
         return ret
-
