@@ -10,7 +10,7 @@ from .serializers import SignupSerializer
 # 회원가입
 class SignupView(APIView):
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         rlt_message = validate_user_data(request.data)
         if rlt_message is not None:
@@ -45,7 +45,7 @@ class LoginView(APIView):
         user = authenticate(user_id=user_id, password=password)
         if not user:
             return Response({"message": "아이디, 패스워드가 일치하지 않거나, 없는 계정입니다."}, status=400)
-        
+
         refresh = RefreshToken.for_user(user)
         return Response(
             {
@@ -61,7 +61,7 @@ class LogoutView(APIView):
         refresh_token = request.data.get('refresh')
         if not refresh_token:
             return Response({"message": "리프레시 토큰이 필요합니다."}, status=400)
-        
+
         try:
             token = RefreshToken(refresh_token)
             # 토큰을 블랙리스트에 추가
@@ -80,7 +80,7 @@ class WithdrawView(APIView):
         password = request.data.get("password")
         if not request.user.check_password(password):
             return Response({"message": "비밀번호를 다시 입력해주세요."}, status=400)
-        
+
         request.user.is_active = False
         request.user.save()
         return Response({"message": "계정이 성공적으로 탈퇴되었습니다."}, status=204)
