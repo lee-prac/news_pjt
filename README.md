@@ -66,7 +66,8 @@ Nozo 뉴스는 RESTful API 방식을 사용하여 사용자 인증, 뉴스 열�
 ------
 
 ##  API 명세서
-|Index|기능|Method|API Path|Authorization|
+|Index|기능|method type|API Path|Authorization|
+|---|---|---|------|---|
 |1|회원 가입|GET|/api/accounts/|all|
 |2|회원 탈퇴|DELETE|/api/accounts/|user|
 |3|로그인|POST|/api/accounts/login/|all|
