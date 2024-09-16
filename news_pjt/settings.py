@@ -115,14 +115,14 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication"
     ],
     # 디폴트값을 "권한이 있을 때" 로 설정함
-    # "DEFAULT_PERMISSION_CLASSES":["rest_framework.permissions.IsAuthenticated"
-    # ],
+    "DEFAULT_PERMISSION_CLASSES":["rest_framework.permissions.IsAuthenticated"
+    ],
     "DEFAULT_PAGINATION_CLASS" : "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE" : 5
 }
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
 # Internationalization
