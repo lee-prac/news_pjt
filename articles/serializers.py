@@ -6,8 +6,12 @@ class ArticleSerializer(serializers.ModelSerializer):
         model = Article
         fields = "__all__"
 
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = "__all__"
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["category"] = CategorySerializer(instance.category).data
+        return ret

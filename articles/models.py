@@ -27,6 +27,8 @@ class Article(TimeStampedModel):
         null=True,
         blank=True
         )
+    created_date = models.ForeignKey(auto_now_add=True)
+    update_date = models.ForeignKey(update_now_add=True)
 
     def __str__(self):
         return self.title
