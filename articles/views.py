@@ -5,8 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.generics import ListAPIView
 from django.db.models import Q
 # from rest_framework.pagination import PageNumberPagination
-from .models import Article
-from .serializers import ArticleSerializer
+from .models import Article, Category
+from .serializers import ArticleSerializer, CategorySerializer
 
 
 
@@ -45,3 +45,7 @@ class ArticleListAPIView(ListAPIView):
     queryset = Article.objects.all()
     serializer = ArticleSerializer(Article, many=True)
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+class CategoryListView(ListAPIView):
+    serializer_class = CategorySerializer
+    queryset = Category.objects.all()
