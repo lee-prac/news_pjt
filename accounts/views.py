@@ -1,13 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
 from .models import CustomUser
 from .validators import validate_user_data
 from .serializers import SignupSerializer
-from rest_framework.permissions import AllowAny
 
 
+# 회원가입
 class SignupView(APIView):
     permission_classes = [AllowAny]
 
@@ -34,6 +35,7 @@ class SignupView(APIView):
         return Response(response_dict)
 
 
+# 로그인
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -57,6 +59,7 @@ class LoginView(APIView):
         )
 
 
+# 로그아웃
 class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get("refresh")
@@ -75,3 +78,16 @@ class LogoutView(APIView):
         response = Response({"message": "로그아웃 되었습니다."}, status=200)
         response.delete_cookie("refreshtoken")
         return response
+
+
+
+# 회원탈퇴
+class WithdrawView(APIView):
+    def delete(self, request):
+        password = request.data.get("password")
+        if not request.user.check_password(password):
+            return Response({"message": "비밀번호를 다시 입력해주세요."}, status=400)
+
+        request.user.is_active = False
+        request.user.save()
+        return Response({"message": "계정이 성공적으로 탈퇴되었습니다."}, status=204)
