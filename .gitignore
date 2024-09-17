@@ -1,6 +1,9 @@
 # Python bytecode
 __pycache__/
 *.py[cod]
+*.log
+*.pot
+*.pyc
 
 # Django migrations
 */migrations/*
@@ -10,7 +13,8 @@ __pycache__/
 
 # 환경설정 파일
 myvenv/
-*.env
+env/
+.myvenv/
 
 # 필요에 따라 추가
 requirements.txt
