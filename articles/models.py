@@ -38,7 +38,7 @@ class Category(models.Model):
     name = models.CharField(max_length=20, unique=True)
 
 # 댓글 모델 (Comment)
-class Comment(models.Model):
+class Comment(TimeStampedModel):
     # 댓글이 달린 뉴스 (ForeignKey를 통해 News 모델과 연결, 해당 뉴스가 삭제되면 댓글도 삭제됨)
     article = models.ForeignKey(Article, related_name='comments', on_delete=models.CASCADE)
     
@@ -48,9 +48,6 @@ class Comment(models.Model):
     
     # 댓글 내용 (긴 텍스트 저장을 위해 TextField 사용)
     content = models.TextField()
-    
-    # 댓글이 작성된 시간 (자동으로 작성 시각이 입력됨)
-    created_at = models.DateTimeField(auto_now_add=True)
 
 
     # 객체의 문자열 표현을 댓글 내용의 일부로 반환
