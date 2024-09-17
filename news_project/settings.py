@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -38,10 +39,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-        
+    # third-party  
     'django_seed',
     'rest_framework',
+    
+    
+    
+    # local
     'news',
+
+    
+    
+    
+    
 ]
 
 MIDDLEWARE = [
@@ -74,7 +84,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'news_project.wsgi.application'
-AUTH_USER_MODEL = 'auth.User' 
+AUTH_USER_MODEL = 'auth.User'
+
 
 
 
@@ -106,6 +117,13 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
+
+
+
+
+
 
 
 # Internationalization

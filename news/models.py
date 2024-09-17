@@ -5,10 +5,8 @@ from django.conf import settings
 class News(models.Model):
     # 뉴스 제목 (최대 길이 255자)
     title = models.CharField(max_length=255)
-    
     # 뉴스 내용 (긴 텍스트 저장을 위해 TextField 사용)
     content = models.TextField()
-    
     # 뉴스가 생성된 시간 (자동으로 생성 시각이 입력됨)
     created_at = models.DateTimeField(auto_now_add=True)
 
