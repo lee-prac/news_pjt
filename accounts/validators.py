@@ -52,3 +52,7 @@ def validate_user_data(user_data):
         validate_email(email)
     except ValidationError:
         return "유효하지 않은 이메일 형식입니다."
+    
+    # bio
+    if len(bio) < 300:
+        return "자기소개는 300자 까지 입력 가능합니다."
