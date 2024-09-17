@@ -21,7 +21,7 @@ class Article(TimeStampedModel):
         related_name="user_articles",  # 필요없으면 삭제하자
     )
     category = models.ForeignKey(
-        'Category',
+        to='Category',
         on_delete=models.CASCADE,
         related_name='articles',
         null=True,
