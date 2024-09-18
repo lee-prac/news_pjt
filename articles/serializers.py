@@ -22,9 +22,13 @@ class CommentSerializer(serializers.ModelSerializer):
         required=False,
     )  # 대댓글을 위한 필드 "parent" == "댓글pk"
 
+    comment_likes_count = serializers.IntegerField(
+        source="comment_likes.count", read_only=True
+    )  # 댓글 좋아요 수
+
     class Meta:
         model = Comment
-        fields = ["id", "author", "content", "parent", "replies"]
+        fields = ["id", "author", "content", "parent", "replies", "comment_likes_count"]
         read_only_fields = ("article", "author")
 
     def get_replies(self, obj):
@@ -51,6 +55,9 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     # author를 "id" 가 아닌 "user_id" 로 보여주기.
     author = serializers.StringRelatedField(read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
+    article_likes_count = serializers.IntegerField(
+        source="article_likes.count", read_only=True
+    )  # 게시글 좋아요 수
 
     class Meta:
         model = Article

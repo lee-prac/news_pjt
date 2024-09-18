@@ -76,3 +76,26 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ArticleLike(TimeStampedModel):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    article = models.ForeignKey(
+        to=Article, on_delete=models.CASCADE, related_name="article_likes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "article")
+
+
+# 댓글 좋아요
+class CommentLike(TimeStampedModel):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    comment = models.ForeignKey(
+        to=Comment, on_delete=models.CASCADE, related_name="comment_likes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "comment")

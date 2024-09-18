@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from .models import Article, Category, Comment, News
+from .models import Article, Category, Comment, News, ArticleLike, CommentLike
 from .serializers import (
     ArticleListSerializer,
     ArticleDetailSerializer,
@@ -244,3 +244,69 @@ class CommentViewSet(viewsets.ModelViewSet):
         if instance.author != self.request.user:
             raise PermissionDenied("본인의 댓글만 삭제할 수 있습니다!")
         instance.delete()
+
+
+class ArticleLikeAPIView(APIView):
+    def post(self, request, article_pk):
+        article = get_object_or_404(Article, pk=article_pk)
+        like, created = ArticleLike.objects.get_or_create(
+            user=request.user, article=article
+        )
+
+        if not created:
+            return Response(
+                data={"detail": "이미 좋아요를 눌렀습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            data={"detail": "이 글을 좋아합니다!"},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def delete(self, request, article_pk):
+        article = get_object_or_404(Article, pk=article_pk)
+        like = ArticleLike.objects.filter(user=request.user, article=article)
+
+        if not like.exists():
+            return Response(
+                data={"detail": "좋아요한 글만 취소할 수 있음."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        like.delete()
+        return Response(
+            data={"detail": "글 좋아요를 취소했습니다!"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+class CommentLikeAPIView(APIView):
+    def post(self, request, comment_pk):
+        comment = get_object_or_404(Comment, pk=comment_pk)
+        like, created = CommentLike.objects.get_or_create(
+            user=request.user, comment=comment
+        )
+
+        if not created:
+            return Response(
+                data={"detail": "이미 좋아요를 눌렀습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            data={"detail": "이 댓글을 좋아합니다!"},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def delete(self, request, comment_pk):
+        comment = get_object_or_404(Comment, pk=comment_pk)
+        like = CommentLike.objects.filter(user=request.user, comment=comment)
+
+        if not like.exists():
+            return Response(
+                data={"detail": "좋아요한 댓글만 취소할 수 있음."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        like.delete()
+        return Response(
+            data={"detail": "댓글 좋아요를 취소했습니다!"},
+            status=status.HTTP_204_NO_CONTENT,
+        )

@@ -11,4 +11,6 @@ urlpatterns = [
     path("category/", views.CategoryListView.as_view()),
     path("<int:pk>/", views.ArticleDetailView.as_view()),
     path("", include(router.urls)),
+    path("<int:article_pk>/like/", views.ArticleLikeAPIView.as_view()),
+    path("comments/<int:comment_pk>/like/", views.CommentLikeAPIView.as_view()),
 ]
