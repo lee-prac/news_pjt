@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from .models import Article, Category, Comment, News
+from .models import Article, Category, Comment, News, ArticleLike, CommentLike
 from .serializers import (
     ArticleListSerializer,
     ArticleDetailSerializer,
@@ -20,6 +20,9 @@ from .serializers import (
 from rest_framework.decorators import action
 import requests
 from bs4 import BeautifulSoup
+
+from datetime import timedelta, datetime
+from django.utils import timezone
 
 
 class ArticleListView(ListAPIView):
@@ -207,13 +210,15 @@ class NewsViewSet(viewsets.ModelViewSet):
 
 # 댓글 모델의 ViewSet
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        return Comment.objects.all().order_by("-pk")
+
     # list() 메서드 오버라이드하여 빈 리스트 처리
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.get_queryset()
         if not queryset.exists():
             return Response({"message": "댓글이 없습니다."}, status=status.HTTP_200_OK)
 
@@ -226,7 +231,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        article_id = self.request.data.get("article")
+        article = get_object_or_404(Article, id=article_id)
+        parent_id = self.request.data.get("parent")
+        parent = get_object_or_404(Comment, id=parent_id) if parent_id else None
+        serializer.save(author=self.request.user, article=article, parent=parent)
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
@@ -238,3 +247,116 @@ class CommentViewSet(viewsets.ModelViewSet):
         if instance.author != self.request.user:
             raise PermissionDenied("본인의 댓글만 삭제할 수 있습니다!")
         instance.delete()
+
+
+class ArticleLikeAPIView(APIView):
+    def post(self, request, article_pk):
+        article = get_object_or_404(Article, pk=article_pk)
+        like, created = ArticleLike.objects.get_or_create(
+            user=request.user, article=article
+        )
+
+        if not created:
+            return Response(
+                data={"detail": "이미 좋아요를 눌렀습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            data={"detail": "이 글을 좋아합니다!"},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def delete(self, request, article_pk):
+        article = get_object_or_404(Article, pk=article_pk)
+        like = ArticleLike.objects.filter(user=request.user, article=article)
+
+        if not like.exists():
+            return Response(
+                data={"detail": "좋아요한 글만 취소할 수 있음."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        like.delete()
+        return Response(
+            data={"detail": "글 좋아요를 취소했습니다!"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+class CommentLikeAPIView(APIView):
+    def post(self, request, comment_pk):
+        comment = get_object_or_404(Comment, pk=comment_pk)
+        like, created = CommentLike.objects.get_or_create(
+            user=request.user, comment=comment
+        )
+
+        if not created:
+            return Response(
+                data={"detail": "이미 좋아요를 눌렀습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            data={"detail": "이 댓글을 좋아합니다!"},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def delete(self, request, comment_pk):
+        comment = get_object_or_404(Comment, pk=comment_pk)
+        like = CommentLike.objects.filter(user=request.user, comment=comment)
+
+        if not like.exists():
+            return Response(
+                data={"detail": "좋아요한 댓글만 취소할 수 있음."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        like.delete()
+        return Response(
+            data={"detail": "댓글 좋아요를 취소했습니다!"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+# 포인트순 정렬
+class PopularArticleView(ListAPIView):
+    serializer_class = ArticleListSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        one_month = timezone.now() - timedelta(days=30)
+        month_articles = Article.objects.filter(created_at__gte=one_month)
+
+        article_points = [
+            {
+                "article": article,
+                "points": ArticleListSerializer(article).data["points"],
+            }
+            for article in month_articles
+        ]
+
+        sorted_by_popular = sorted(
+            article_points, key=lambda k: k["points"], reverse=True
+        )
+
+        return [article["article"] for article in sorted_by_popular]
+
+
+# 예전글 검색
+class PastArticleView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        day = request.GET.get("day")
+        if day:
+            try:
+                valid_date = datetime.strptime(day, "%Y-%m-%d").date()
+                articles = Article.objects.filter(created_at__date=valid_date)
+                serializer = ArticleListSerializer(articles, many=True)
+                return Response(serializer.data)
+            except ValueError:
+                return Response(
+                    data={"message": "형식 맞춰서 입력하세요! >>> YYYY-MM-DD"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        return Response(
+            data={"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
