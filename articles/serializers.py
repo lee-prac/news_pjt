@@ -11,7 +11,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "user_id", "email"]
+        fields = ["nickname"]
 
 
 # 댓글 직렬화 (CommentSerializer)
@@ -44,7 +44,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(read_only=True)
+    author = UserSerializer(read_only=True)
     comments_count = serializers.IntegerField(source="comments.count", read_only=True)
 
     class Meta:
@@ -69,8 +69,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
-    # author를 "id" 가 아닌 "user_id" 로 보여주기.
-    author = serializers.StringRelatedField(read_only=True)
+    author = UserSerializer(read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     article_likes_count = serializers.IntegerField(
         source="article_likes.count", read_only=True

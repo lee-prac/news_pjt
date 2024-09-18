@@ -26,7 +26,7 @@ from django.utils import timezone
 
 
 class ArticleListView(ListAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = PageNumberPagination
     serializer_class = ArticleListSerializer
 
@@ -360,3 +360,18 @@ class PastArticleView(APIView):
             data={"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+# 카테고리별 검색
+class ArticleCategoryListView(ListAPIView):
+    serializer_class = ArticleListSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        category_name = self.kwargs.get("category_name")
+        category = Category.objects.filter(name=category_name).first()
+
+        if category:
+            return Article.objects.filter(category=category)
+        else:
+            return Article.objects.none()
