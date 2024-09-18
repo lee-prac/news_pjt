@@ -207,13 +207,15 @@ class NewsViewSet(viewsets.ModelViewSet):
 
 # 댓글 모델의 ViewSet
 class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def get_queryset(self):
+        return Comment.objects.all().order_by("-pk")
+
     # list() 메서드 오버라이드하여 빈 리스트 처리
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.get_queryset()
         if not queryset.exists():
             return Response({"message": "댓글이 없습니다."}, status=status.HTTP_200_OK)
 
@@ -226,7 +228,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        article_id = self.request.data.get("article")
+        article = get_object_or_404(Article, id=article_id)
+        parent_id = self.request.data.get("parent")
+        parent = get_object_or_404(Comment, id=parent_id) if parent_id else None
+        serializer.save(author=self.request.user, article=article, parent=parent)
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()

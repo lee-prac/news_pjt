@@ -55,6 +55,15 @@ class Comment(TimeStampedModel):
     # 댓글 내용 (긴 텍스트 저장을 위해 TextField 사용)
     content = models.TextField()
 
+    # 대댓글사용법: parent가 null일경우 일반댓글, parent가 댓글pk일 경우 대댓글
+    parent = models.ForeignKey(
+        to="self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="replies",
+    )
+
     # 객체의 문자열 표현을 댓글 내용의 일부로 반환
     def __str__(self):
         return self.content[:20]
