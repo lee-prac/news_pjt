@@ -21,6 +21,9 @@ from rest_framework.decorators import action
 import requests
 from bs4 import BeautifulSoup
 
+from datetime import timedelta
+from django.utils import timezone
+
 
 class ArticleListView(ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -310,3 +313,27 @@ class CommentLikeAPIView(APIView):
             data={"detail": "댓글 좋아요를 취소했습니다!"},
             status=status.HTTP_204_NO_CONTENT,
         )
+
+
+# 포인트순 정렬
+class PopularArticleView(ListAPIView):
+    serializer_class = ArticleListSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        one_month = timezone.now() - timedelta(days=30)
+        month_articles = Article.objects.filter(created_at__gte=one_month)
+
+        article_points = [
+            {
+                "article": article,
+                "points": ArticleListSerializer(article).data["points"],
+            }
+            for article in month_articles
+        ]
+
+        sorted_by_popular = sorted(
+            article_points, key=lambda k: k["points"], reverse=True
+        )
+
+        return [article["article"] for article in sorted_by_popular]

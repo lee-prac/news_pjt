@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Article, Category, Comment, News
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 
 User = get_user_model()
@@ -48,7 +49,23 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ["id", "title", "author", "created_at", "comments_count"]
+        fields = ["id", "title", "author", "created_at", "comments_count", "points"]
+
+    # 게시글 포인트
+    points = serializers.SerializerMethodField()
+
+    def get_points(self, obj):
+        # 게시일 기준 하루마다 -5 point  # 저녁에 작성한 사람 안억울하게 초단위로 계산하기
+        article_age = timezone.now() - obj.created_at
+        article_age_days = article_age.total_seconds() // (24 * 60 * 60)
+        time_points = int(-5 * article_age_days)
+
+        comment_points = obj.comments.count() * 3  # 댓글 수 +3 point
+
+        like_points = obj.article_likes.count()  # 좋아요 수 +1 point
+
+        total_points = time_points + comment_points + like_points
+        return total_points if total_points > 0 else 0
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
