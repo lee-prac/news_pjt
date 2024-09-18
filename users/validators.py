@@ -21,7 +21,7 @@ def validate_user_data(user_data):
     except ValidationError:
         return "유효하지 않은 이메일 형식입니다."
 
-# nickname
+    # nickname
     if not nickname:
         return "닉네임을 입력해주세요."
 
@@ -35,7 +35,7 @@ def validate_user_data(user_data):
     if len(bio) > 300:
         return "자기소개는 300자 까지 입력 가능합니다."
 
-    # pw_change
+# pw_change
 def validate_password_change(new_password, old_password, user):
     if not new_password:
         return "비밀번호를 입력해주세요."
