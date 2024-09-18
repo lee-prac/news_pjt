@@ -15,4 +15,9 @@ urlpatterns = [
     path("comments/<int:comment_pk>/like/", views.CommentLikeAPIView.as_view()),
     path("popular/", views.PopularArticleView.as_view()),  # 인기순(==포인트순)
     path("past/", views.PastArticleView.as_view(), name="past_articles"),
+    path(
+        "nozonews/", views.ArticleCategoryListView.as_view(), {"category_name": "News"}
+    ),
+    path("ask/", views.ArticleCategoryListView.as_view(), {"category_name": "Ask"}),
+    path("show/", views.ArticleCategoryListView.as_view(), {"category_name": "Show"}),
 ]

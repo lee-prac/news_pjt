@@ -42,7 +42,7 @@ class ArticleListView(ListAPIView):
         title = request.data.get("title")
         content = request.data.get("content")
         image = request.data.get("image")
-        category_id_text = request.data.get("category")
+        category_name = request.data.get("category")
 
         # 500에러 억울하니까 예외 처리 해줄게요!
         if not title:
@@ -55,16 +55,18 @@ class ArticleListView(ListAPIView):
                 data={"message": "내용은 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            category = Category.objects.get(id=category_id_text)
-        except Category.DoesNotExist:
-            raise ValidationError({"category": "그런 카테고리는 없습니다!"})
+        category = Category.objects.filter(name=category_name).first()
+        if not category:
+            return Response(
+                data={"message": f"category >>> News, Show, Ask 셋중하나!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         article = Article.objects.create(
             title=title,
             content=content,
             image=image,
-            category_id=category_id_text,
+            category=category,
             author=request.user,  # 요청한 사용자를 author로 설정
         )
         serializer = ArticleDetailSerializer(article)
@@ -232,10 +234,26 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         article_id = self.request.data.get("article")
-        article = get_object_or_404(Article, id=article_id)
         parent_id = self.request.data.get("parent")
-        parent = get_object_or_404(Comment, id=parent_id) if parent_id else None
-        serializer.save(author=self.request.user, article=article, parent=parent)
+
+        if article_id and parent_id:
+            raise ValidationError(
+                "둘 중 하나만 입력:  1) 댓글달기 >> article: pk  /  2) 대댓글달기 >> parent: pk"
+            )
+        elif not article_id and not parent_id:
+            raise ValidationError(
+                "필드 입력:  1) 댓글달기 >> article: pk  /  2) 대댓글달기 >> parent: pk"
+            )
+
+        if article_id:
+            article = get_object_or_404(Article, id=article_id)
+            serializer.save(author=self.request.user, article=article)
+
+        if parent_id:
+            parent = get_object_or_404(Comment, id=parent_id)
+            serializer.save(
+                author=self.request.user, article=parent.article, parent=parent
+            )
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
@@ -360,3 +378,18 @@ class PastArticleView(APIView):
             data={"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+# 카테고리별 검색
+class ArticleCategoryListView(ListAPIView):
+    serializer_class = ArticleListSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        category_name = self.kwargs.get("category_name")
+        category = Category.objects.filter(name=category_name).first()
+
+        if category:
+            return Article.objects.filter(category=category)
+        else:
+            return Article.objects.none()
