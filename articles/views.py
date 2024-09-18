@@ -234,10 +234,26 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         article_id = self.request.data.get("article")
-        article = get_object_or_404(Article, id=article_id)
         parent_id = self.request.data.get("parent")
-        parent = get_object_or_404(Comment, id=parent_id) if parent_id else None
-        serializer.save(author=self.request.user, article=article, parent=parent)
+
+        if article_id and parent_id:
+            raise ValidationError(
+                "둘 중 하나만 입력:  1) 댓글달기 >> article: pk  /  2) 대댓글달기 >> parent: pk"
+            )
+        elif not article_id and not parent_id:
+            raise ValidationError(
+                "필드 입력:  1) 댓글달기 >> article: pk  /  2) 대댓글달기 >> parent: pk"
+            )
+
+        if article_id:
+            article = get_object_or_404(Article, id=article_id)
+            serializer.save(author=self.request.user, article=article)
+
+        if parent_id:
+            parent = get_object_or_404(Comment, id=parent_id)
+            serializer.save(
+                author=self.request.user, article=parent.article, parent=parent
+            )
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
