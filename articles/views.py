@@ -5,15 +5,16 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from .models import Article, Category, Comment
+from .models import Article, Category, Comment, News
 from .serializers import (
     ArticleListSerializer,
     ArticleDetailSerializer,
     CategorySerializer,
     CommentSerializer,
-    UserSerializer,
+    NewsSerializer,
 )
 
 from rest_framework.decorators import action
@@ -108,13 +109,36 @@ class CategoryListView(ListAPIView):
     queryset = Category.objects.all()
 
 
-# ---------
 class NewsViewSet(viewsets.ModelViewSet):
-    queryset = Article.objects.all()  # News 모델에 연결된 모든 데이터를 가져옴
-    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    serializer_class = NewsSerializer
 
-    # 뉴스 목록을 크롤링해서 JSON으로 반환
+    def get_queryset(self):
+        search = self.request.query_params.get("search", None)
+        queryset = News.objects.all()
+        if search:
+            queryset = News.objects.filter(Q(title__icontains=search))
+        return queryset
+
+    # 결과반환 역할
     def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if not queryset.exists() and "search" in request.query_params:
+            return Response(
+                data={"detail": "검색 결과가 없습니다!"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        new_news_queryset = self.crawl_news()
+        all_news = queryset.union(new_news_queryset)
+
+        # 크롤링한 뉴스 목록을 JSON 형식으로 반환
+        serializer = NewsSerializer(all_news, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # 크롤링 역할
+    def crawl_news(self):
         url = "https://www.bbc.com/news/technology"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
@@ -129,10 +153,10 @@ class NewsViewSet(viewsets.ModelViewSet):
             soup = BeautifulSoup(response.text, "html.parser")
 
             # 크롤링된 뉴스 목록을 담을 리스트
-            news_list = []
+            new_news_list = []
 
-            # h3 태그로 뉴스 제목 추출, 링크는 상위 a 태그에서 추출
-            for item in soup.select("h3"):
+            # h2 태그로 뉴스 제목 추출, 링크는 상위 a 태그에서 추출
+            for item in soup.select("h2"):
                 title = item.get_text(strip=True)
                 link_tag = item.find_parent("a")  # 상위 a 태그에서 링크 찾기
 
@@ -145,17 +169,12 @@ class NewsViewSet(viewsets.ModelViewSet):
                 else:
                     link = "링크 없음"
 
-                # 뉴스 목록에 저장
-                news_list.append({"title": title, "link": link})
+                # 새뉴스만 db 저장
+                if not News.objects.filter(title=title).exists():
+                    news = News.objects.create(title=title, link=link)
+                    new_news_list.append(news)
 
-            # 크롤링한 뉴스 목록을 JSON 형식으로 반환
-            if news_list:
-                return Response({"crawled_news": news_list}, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {"message": "크롤링된 뉴스가 없습니다."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+            return News.objects.filter(id__in=[news.id for news in new_news_list])
 
         except requests.exceptions.RequestException as e:
             return Response(
@@ -163,56 +182,34 @@ class NewsViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    # 뉴스 디테일 페이지 보여주기
-    def retrieve(self, request, pk=None):
-        article = self.get_object()
-        if not article.exists():  # 빈 리스트인경우
-            return Response({"message": "뉴스리스트가 없습니다."})
-        serializer = self.get_serializer(article)
-
-        return Response(serializer.data)
-
-    # 뉴스 검색 API - 로그인 없이 가능
-    @action(detail=False, methods=["get"])
-    def search_news(self, request):
-        query = request.query_params.get("q", None)
-        if query:
-            news_list = Article.objects.filter(
-                Q(title__icontains=query) | Q(content__icontains=query)
-            )
-            serializer = self.get_serializer(news_list, many=True)
-            return Response(serializer.data)
-        return Response(
-            {"detail": "검색어를 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-    # 뉴스에 대한 댓글 보여주기 API - 로그인 없이 가능
-    @action(detail=True, methods=["get"])
-    def comments(self, request, pk=None):
-        article = self.get_object()
-        comments = article.comments.all()
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data)
-
-    # 뉴스에 댓글 작성하기 API - 로그인 필요 없음
-    @action(detail=True, methods=["post"])
-    def add_comment(self, request, pk=None):
-        news = self.get_object()
-        data = request.data.copy()
-        data["news"] = news.id
-        serializer = CommentSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save(
-                author=request.user if request.user.is_authenticated else None
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # # 뉴스에 대한 댓글 보여주기 API - 로그인 없이 가능
+    # @action(detail=True, methods=["get"])
+    # def comments(self, request, pk=None):
+    #     news = self.get_object()
+    #     comments = news.comments.all()
+    #     serializer = CommentSerializer(comments, many=True)
+    #     return Response(serializer.data)
+    #
+    # # 뉴스에 댓글 작성하기 API - 로그인 필요 없음
+    # @action(detail=True, methods=["post"])
+    # def add_comment(self, request, pk=None):
+    #     news = self.get_object()
+    #     data = request.data.copy()
+    #     data["news"] = news.id
+    #     serializer = CommentSerializer(data=data)
+    #     if serializer.is_valid():
+    #         serializer.save(
+    #             author=request.user if request.user.is_authenticated else None
+    #         )
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # 댓글 모델의 ViewSet
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     # list() 메서드 오버라이드하여 빈 리스트 처리
     def list(self, request, *args, **kwargs):
@@ -227,3 +224,17 @@ class CommentViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if comment.author != request.user:
+            raise PermissionDenied("본인의 댓글만 수정할 수 있습니다!")
+        return super().update(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        if instance.author != self.request.user:
+            raise PermissionDenied("본인의 댓글만 삭제할 수 있습니다!")
+        instance.delete()

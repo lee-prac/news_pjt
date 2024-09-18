@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from .models import Article, Category
+from .models import Article, Category, Comment, News
 from django.contrib.auth import get_user_model
-from .models import Article, Comment  # 모델 임포트
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -41,7 +40,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "username", "email"]
+        fields = ["id", "user_id", "email"]
 
 
 # 댓글 직렬화 (CommentSerializer)
@@ -51,3 +50,9 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ["id", "article", "author", "content", "created_at"]
+
+
+class NewsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = News
+        fields = ["id", "title", "link", "crawled_at"]
