@@ -42,7 +42,7 @@ class ArticleListView(ListAPIView):
         title = request.data.get("title")
         content = request.data.get("content")
         image = request.data.get("image")
-        category_id_text = request.data.get("category")
+        category_name = request.data.get("category")
 
         # 500에러 억울하니까 예외 처리 해줄게요!
         if not title:
@@ -55,16 +55,18 @@ class ArticleListView(ListAPIView):
                 data={"message": "내용은 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            category = Category.objects.get(id=category_id_text)
-        except Category.DoesNotExist:
-            raise ValidationError({"category": "그런 카테고리는 없습니다!"})
+        category = Category.objects.filter(name=category_name).first()
+        if not category:
+            return Response(
+                data={"message": f"category >>> News, Show, Ask 셋중하나!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         article = Article.objects.create(
             title=title,
             content=content,
             image=image,
-            category_id=category_id_text,
+            category=category,
             author=request.user,  # 요청한 사용자를 author로 설정
         )
         serializer = ArticleDetailSerializer(article)

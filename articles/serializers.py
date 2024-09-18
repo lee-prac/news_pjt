@@ -4,19 +4,9 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 
-User = get_user_model()
-
-
-# 사용자 직렬화 (UserSerializer)
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["nickname"]
-
-
 # 댓글 직렬화 (CommentSerializer)
 class CommentSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = serializers.CharField(source="author.nickname", read_only=True)
     replies = serializers.SerializerMethodField()  # 대댓글 직렬화
     parent = serializers.PrimaryKeyRelatedField(
         queryset=Comment.objects.all(),
@@ -44,7 +34,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = serializers.CharField(source="author.nickname", read_only=True)
     comments_count = serializers.IntegerField(source="comments.count", read_only=True)
 
     class Meta:
@@ -69,7 +59,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = serializers.CharField(source="author.nickname", read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
     article_likes_count = serializers.IntegerField(
         source="article_likes.count", read_only=True
@@ -83,7 +73,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     # 카테고리를 "id" 가 아닌 "카테고리이름" 으로 보여주기.
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        ret["category"] = CategorySerializer(instance.category).data
+        ret["category"] = instance.category.name
         return ret
 
 
