@@ -14,4 +14,5 @@ urlpatterns = [
     path("<int:article_pk>/like/", views.ArticleLikeAPIView.as_view()),
     path("comments/<int:comment_pk>/like/", views.CommentLikeAPIView.as_view()),
     path("popular/", views.PopularArticleView.as_view()),  # 인기순(==포인트순)
+    path("past/", views.PastArticleView.as_view(), name="past_articles"),
 ]

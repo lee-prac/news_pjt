@@ -21,7 +21,7 @@ from rest_framework.decorators import action
 import requests
 from bs4 import BeautifulSoup
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils import timezone
 
 
@@ -337,3 +337,26 @@ class PopularArticleView(ListAPIView):
         )
 
         return [article["article"] for article in sorted_by_popular]
+
+
+# 예전글 검색
+class PastArticleView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        day = request.GET.get("day")
+        if day:
+            try:
+                valid_date = datetime.strptime(day, "%Y-%m-%d").date()
+                articles = Article.objects.filter(created_at__date=valid_date)
+                serializer = ArticleListSerializer(articles, many=True)
+                return Response(serializer.data)
+            except ValueError:
+                return Response(
+                    data={"message": "형식 맞춰서 입력하세요! >>> YYYY-MM-DD"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        return Response(
+            data={"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
