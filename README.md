@@ -72,13 +72,13 @@ Nozo 뉴스는 RESTful API 방식을 사용하여 사용자 인증, 뉴스 열�
 |2|회원 탈퇴|DELETE|/api/accounts/withdraw/|user|
 |3|로그인|POST|/api/accounts/login/|all|
 |4|로그아웃|POST|/api/accounts/logout/|user|
-||비밀번호 변경|PUT|/api/accounts/password/|user|
-|5|프로필 조회|GET|/api/accounts/<str:user_id>/|all|
-|6|프로필 수정|PUT|/api/accounts/<str:user_id>/|user|
-|7|작성 글 목록|GET|/api/accounts/<str:user_id>/my_articles/|all|
-|8|작성 댓글 목록|GET|/api/accounts/<str:user_id>/my_comments/|user|
-|9|좋아요 글 목록|GET|/api/accounts/<str:user_id>/like_articles/|all|
-|10|좋아요 댓글 목록|GET|/api/accounts/<str:user_id>/like_comments/|user|
+||비밀번호 변경|PUT|/api/users/password/|user|
+|5|프로필 조회|GET|/api/users/<str:user_id>/|all|
+|6|프로필 수정|PUT|/api/users/<str:user_id>/|user|
+|7|작성 글 목록|GET|/api/users/<str:user_id>/my_articles/|all|
+|8|작성 댓글 목록|GET|/api/users/<str:user_id>/my_comments/|user|
+|9|좋아요 글 목록|GET|/api/users/<str:user_id>/like_articles/|all|
+|10|좋아요 댓글 목록|GET|/api/users/<str:user_id>/like_comments/|user|
 |11|글 등록|POST|/api/articles/|user|
 |12|최신글 목록|GET|/api/articles/|all|
 |13|예전글 목록|GET|/api/articles/past/|all|
