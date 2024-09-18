@@ -1,4 +1,4 @@
-# Nozo Noews Project
+# Nozo News Project
 Nozo 뉴스 프로젝트는 Django 프레임워크를 기반으로 뉴스 플랫폼의 기본 기능을 구현한 웹 애플리케이션 프로젝트 입니다.
 
 ## 프로젝트 개요
@@ -10,7 +10,7 @@ Nozo 뉴스는 RESTful API 방식을 사용하여 사용자 인증, 뉴스 열�
 - 팀원: 강지석, 이서원, 박현진, 차민승
 
 ## 개발일정
-- 2024.09.11. ~ 2024.09.19.
+- 2024.09.11 ~ 2024.09.19
 
 ## 개발환경
 - Language: Python 3.10
@@ -27,17 +27,17 @@ Nozo 뉴스는 RESTful API 방식을 사용하여 사용자 인증, 뉴스 열�
 
 ### 1️⃣ 회원관리
 - 회원가입: 사용자는 플랫폼에 가입하여 개인 계정을 생성할 수 있습니다.
-  - Required: Username(unique), password, nickname(unique), email(unique),
-  - Optional: Bio, Gender? 또 뭐더라
+  - Required: user_id(unique), password, nickname(unique), email(unique)
+  - Optional: bio
 - 로그인 : 회원은 자신의 계정으로 로그인하여 서비스를 이용할 수 있습니다.
 - 로그아웃 : 회원은 자신의 로그인 세션을 종료할 수 있습니다.
-- 회원정보 수정 : 회원은 자신의 프로필 정보를 수정할 수 있습니다.
 - 회원탈퇴 : 회원은 언제든지 계정을 삭제할 수 있으며, 탈퇴 시 계정은 비활성화로 전환됩니다.
 
-- ------
+------
 
  ###  2️⃣ 유저기능
   - 프로필 : 본인 또는 다른 유저의 프로필을 조회할 수 있습니다.
+  - 회원 정보 수정 : 회원은 자신의 프로필 정보를 수정할 수 있습니다.
   - 작성한 게시물 조회 : 자신이 등록한 게시물을 조회 및 관리할 수 있습니다.
   - 찜한 게시물 조회 : 자신이 찜한 게시물을 조회 및 관리할 수 있습니다.
 
@@ -53,32 +53,32 @@ Nozo 뉴스는 RESTful API 방식을 사용하여 사용자 인증, 뉴스 열�
 ------
 
 ###  4️⃣ 좋아요 및 북마크 북마크 하지 말까 그냥
-  - 뉴스 좋아요 : 사용자는 뉴스를 좋아요할 수 잇음
-    - 사용자는 자신 혹은 다른 유저가 좋아요 한 뉴스 목록을 조회할 수 있음
-  - 댓글 좋아요 : 사용자는 댓글에도 좋아요를 누를 수 있음
-    - 사용자는 자신이 좋아요 한 댓글 목록을 조회할 수 있음
+  - 뉴스 좋아요 : 사용자는 뉴스를 좋아요를 남길 수 있습니다.
+    - 사용자는 자신 혹은 다른 유저가 좋아요 한 뉴스 목록을 조회할 수 있습니다.
+  - 댓글 좋아요 : 사용자는 댓글에도 좋아요를 남길 수 있습니다.
+    - 사용자는 자신이 좋아요 한 댓글 목록을 조회할 수 있습니다.
 
 ------
 
 ###  5️⃣ 뉴스검색
-  - 뉴스 검색 : 사용자는 제목, 내용 등을 기준으로 뉴스를 검색할 수 있음
+  - 뉴스 검색 : 사용자는 제목, 내용 등을 기준으로 뉴스를 검색할 수 있습니다.
 
 ------
 
 ##  API 명세서
 |Index|기능|method type|API Path|Authorization|
 |---|---|---|------|---|
-|1|회원 가입|GET|/api/accounts/|all|
-|2|회원 탈퇴|DELETE|/api/accounts/|user|
+|1|회원 가입|GET|/api/accounts/signup/|all|
+|2|회원 탈퇴|DELETE|/api/accounts/withdraw/|user|
 |3|로그인|POST|/api/accounts/login/|all|
 |4|로그아웃|POST|/api/accounts/logout/|user|
-||비밀번호 변경|PUT|/api/accounts/<str:username>/password/|user|
-|5|프로필 조회|GET|/api/accounts/<str:username>/|all|
-|6|프로필 수정|PUT|/api/accounts/<str:username>/|user|
-|7|작성 글 목록|GET|/api/accounts/<str:username>/my_articles/|all|
-|8|작성 댓글 목록|GET|/api/accounts/<str:username>/my_comments/|user|
-|9|좋아요 글 목록|GET|/api/accounts/<str:username>/like_articles/|all|
-|10|좋아요 댓글 목록|GET|/api/accounts/<str:username>/like_comments/|user|
+||비밀번호 변경|PUT|/api/users/password/|user|
+|5|프로필 조회|GET|/api/users/<str:user_id>/|all|
+|6|프로필 수정|PUT|/api/users/<str:user_id>/|user|
+|7|작성 글 목록|GET|/api/users/<str:user_id>/my_articles/|all|
+|8|작성 댓글 목록|GET|/api/users/<str:user_id>/my_comments/|user|
+|9|좋아요 글 목록|GET|/api/users/<str:user_id>/like_articles/|all|
+|10|좋아요 댓글 목록|GET|/api/users/<str:user_id>/like_comments/|user|
 |11|글 등록|POST|/api/articles/|user|
 |12|최신글 목록|GET|/api/articles/|all|
 |13|예전글 목록|GET|/api/articles/past/|all|
