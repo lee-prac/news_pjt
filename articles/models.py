@@ -14,7 +14,7 @@ class Article(TimeStampedModel):
     title = models.CharField(max_length=25)
     content = models.TextField()
     image = models.ImageField(upload_to="articles/image/", null=True, blank=True)
-    url = models.URLField(blank=True)
+    url = models.URLField(blank=True, null=True)
     author = models.ForeignKey(
         to=settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

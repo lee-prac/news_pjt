@@ -34,7 +34,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ArticleListSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source="author.nickname", read_only=True)
-    comments_count = serializers.IntegerField(source="comments.count", read_only=True)
+    comments_count = serializers.IntegerField(source="total_comments", read_only=True)
 
     class Meta:
         model = Article
@@ -62,7 +62,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     article_likes_count = serializers.IntegerField(
         source="article_likes.count", read_only=True
     )  # 게시글 좋아요 수
-    comments_count = serializers.IntegerField(source="comments.count", read_only=True)
+    comments_count = serializers.IntegerField(source="total_comments", read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:

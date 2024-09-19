@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from .models import Article, Category, Comment, News, ArticleLike, CommentLike
 from .serializers import (
@@ -31,9 +31,14 @@ class ArticleListView(ListAPIView):
 
     def get_queryset(self):
         search = self.request.query_params.get("search")
-        queryset = Article.objects.select_related(
-            "author", "category"
-        ).prefetch_related("comments", "article_likes")
+        queryset = (
+            Article.objects.select_related("author", "category")
+            .prefetch_related("article_likes")
+            .annotate(
+                total_comments=Count("comments", distinct=True)
+                + Count("comments__replies", distinct=True)
+            )  # 대댓글 갯수까지 합해서 계산할 수 있도록
+        )
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) | Q(content__icontains=search)
@@ -45,6 +50,7 @@ class ArticleListView(ListAPIView):
         content = request.data.get("content")
         category = request.data.get("category")
         image = request.data.get("image")
+        url = request.data.get("url")
 
         # 500에러 억울하니까 예외 처리 해줄게요!
         if not title:
@@ -70,6 +76,7 @@ class ArticleListView(ListAPIView):
             content=content,
             category=category,
             image=image,
+            url=url,
         )
         serializer = ArticleDetailSerializer(article)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -87,6 +94,10 @@ class ArticleDetailView(APIView):
                 "comments__comment_likes",  # 댓글 좋아요 수 미리 로드
                 "comments__replies__comment_likes",  # 대댓글이랑 대댓글 좋아요 미리 로드
             )
+            .annotate(
+                total_comments=Count("comments", distinct=True)
+                + Count("comments__replies", distinct=True)
+            )  # 대댓글 갯수까지 합해서 계산할 수 있도록
             .get(pk=pk)
         )
         serializer = ArticleDetailSerializer(article)
