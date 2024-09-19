@@ -362,7 +362,15 @@ class PopularArticleView(ListAPIView):
 
     def get_queryset(self):
         one_month = timezone.now() - timedelta(days=30)
-        month_articles = Article.objects.filter(created_at__gte=one_month)
+        month_articles = (
+            Article.objects.filter(created_at__gte=one_month)
+            .select_related("author")
+            .prefetch_related("comments", "article_likes")
+            .annotate(
+                total_comments=Count("comments", distinct=True)
+                + Count("comments__replies", distinct=True)
+            )
+        )
 
         article_points = [
             {
@@ -380,26 +388,29 @@ class PopularArticleView(ListAPIView):
 
 
 # 예전글 검색
-class PastArticleView(APIView):
+class PastArticleView(ListAPIView):
+    serializer_class = ArticleListSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get(self, request):
-        day = request.GET.get("day")
+    def get_queryset(self):
+        day = self.request.GET.get("day")
         if day:
             try:
                 valid_date = datetime.strptime(day, "%Y-%m-%d").date()
-                articles = Article.objects.filter(created_at__date=valid_date)
-                serializer = ArticleListSerializer(articles, many=True)
-                return Response(serializer.data)
-            except ValueError:
-                return Response(
-                    data={"message": "형식 맞춰서 입력하세요! >>> YYYY-MM-DD"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                return (
+                    Article.objects.filter(created_at__date=valid_date)
+                    .select_related("author")
+                    .annotate(
+                        total_comments=Count("comments", distinct=True)
+                        + Count("comments__replies", distinct=True)
+                    )
                 )
-        return Response(
-            data={"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+
+            except ValueError:
+                raise ValidationError(
+                    {"message": "형식 맞춰서 입력하세요! >>> YYYY-MM-DD"}
+                )
+        raise ValidationError({"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"})
 
 
 # 카테고리별 검색
