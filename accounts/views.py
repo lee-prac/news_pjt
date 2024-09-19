@@ -2,9 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
+from rest_framework import status
 from django.contrib.auth import authenticate
 from .models import CustomUser
-from .validators import validate_user_data
+from .validators import validate_user_data, validate_password_change
 from .serializers import SignupSerializer
 
 # 회원가입
@@ -84,3 +85,20 @@ class WithdrawView(APIView):
         request.user.is_active = False
         request.user.save()
         return Response({"message": "계정이 성공적으로 탈퇴되었습니다."}, status=204)
+
+
+# 비밀번호 변경
+class PasswordChangeView(APIView):
+    def post(self, request):
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+
+        rlt_message = validate_password_change(
+            new_password, old_password, request.user)
+        if rlt_message:
+            return Response({"message": rlt_message}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 비밀번호 변경 처리
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({"message": "비밀번호가 성공적으로 변경되었습니다."}, status=status.HTTP_200_OK)

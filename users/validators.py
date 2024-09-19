@@ -34,20 +34,3 @@ def validate_user_data(user_data):
     # bio
     if len(bio) > 300:
         return "자기소개는 300자 까지 입력 가능합니다."
-
-# pw_change
-def validate_password_change(new_password, old_password, user):
-    if not new_password:
-        return "비밀번호를 입력해주세요."
-
-    if len(new_password) < 8 or \
-            not any(char.isdigit() for char in new_password) or \
-            not any(char.isupper() for char in new_password) or \
-            not any(char in string.punctuation for char in new_password):
-        return "비밀번호는 최소 8자 이상, 숫자와 대문자, 특수문자를 각각 하나 이상 포함해야 합니다."
-
-    if old_password == new_password:
-        return "새 비밀번호는 기존 비밀번호와 달라야 합니다."
-
-    if not user.check_password(old_password):
-        return "기존 비밀번호가 틀렸습니다."
