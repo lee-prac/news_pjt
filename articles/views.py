@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from .models import Article, Category, Comment, News, ArticleLike, CommentLike
 from .serializers import (
@@ -17,7 +17,6 @@ from .serializers import (
     NewsSerializer,
 )
 
-from rest_framework.decorators import action
 import requests
 from bs4 import BeautifulSoup
 
@@ -32,42 +31,52 @@ class ArticleListView(ListAPIView):
 
     def get_queryset(self):
         search = self.request.query_params.get("search")
+        queryset = (
+            Article.objects.select_related("author", "category")
+            .prefetch_related("article_likes")
+            .annotate(
+                total_comments=Count("comments", distinct=True)
+                + Count("comments__replies", distinct=True)
+            )  # 대댓글 갯수까지 합해서 계산할 수 있도록
+        )
         if search:
-            return Article.objects.filter(
+            queryset = queryset.filter(
                 Q(title__icontains=search) | Q(content__icontains=search)
             )
-        return Article.objects.all()
+        return queryset
 
     def post(self, request):  # 글 작성 / 로그인 필요
         title = request.data.get("title")
         content = request.data.get("content")
+        category = request.data.get("category")
         image = request.data.get("image")
-        category_name = request.data.get("category")
+        url = request.data.get("url")
 
         # 500에러 억울하니까 예외 처리 해줄게요!
         if not title:
             return Response(
-                data={"message": "제목은 필수 입력란 입니다!"},
+                data={"message": "title 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not content:
             return Response(
-                data={"message": "내용은 필수 입력란 입니다!"},
+                data={"message": "content 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        category = Category.objects.filter(name=category_name).first()
+        category = Category.objects.filter(name=category).first()
         if not category:
             return Response(
-                data={"message": f"category >>> News, Show, Ask 셋중하나!"},
+                data={"message": "category 입력 >>> News, Show, Ask 셋중하나!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         article = Article.objects.create(
+            author=request.user,
             title=title,
             content=content,
-            image=image,
             category=category,
-            author=request.user,  # 요청한 사용자를 author로 설정
+            image=image,
+            url=url,
         )
         serializer = ArticleDetailSerializer(article)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -77,7 +86,20 @@ class ArticleDetailView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request, pk):
-        article = get_object_or_404(Article, pk=pk)
+        article = (
+            Article.objects.select_related("author", "category")
+            .prefetch_related(
+                "comments__author",  # 댓글 작성자 미리 로드
+                "comments__replies__author",  # 대댓글이랑 대댓글 작성자 미리 로드
+                "comments__comment_likes",  # 댓글 좋아요 수 미리 로드
+                "comments__replies__comment_likes",  # 대댓글이랑 대댓글 좋아요 미리 로드
+            )
+            .annotate(
+                total_comments=Count("comments", distinct=True)
+                + Count("comments__replies", distinct=True)
+            )  # 대댓글 갯수까지 합해서 계산할 수 있도록
+            .get(pk=pk)
+        )
         serializer = ArticleDetailSerializer(article)
         return Response(serializer.data)
 
@@ -340,7 +362,15 @@ class PopularArticleView(ListAPIView):
 
     def get_queryset(self):
         one_month = timezone.now() - timedelta(days=30)
-        month_articles = Article.objects.filter(created_at__gte=one_month)
+        month_articles = (
+            Article.objects.filter(created_at__gte=one_month)
+            .select_related("author")
+            .prefetch_related("comments", "article_likes")
+            .annotate(
+                total_comments=Count("comments", distinct=True)
+                + Count("comments__replies", distinct=True)
+            )
+        )
 
         article_points = [
             {
@@ -358,26 +388,29 @@ class PopularArticleView(ListAPIView):
 
 
 # 예전글 검색
-class PastArticleView(APIView):
+class PastArticleView(ListAPIView):
+    serializer_class = ArticleListSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get(self, request):
-        day = request.GET.get("day")
+    def get_queryset(self):
+        day = self.request.GET.get("day")
         if day:
             try:
                 valid_date = datetime.strptime(day, "%Y-%m-%d").date()
-                articles = Article.objects.filter(created_at__date=valid_date)
-                serializer = ArticleListSerializer(articles, many=True)
-                return Response(serializer.data)
-            except ValueError:
-                return Response(
-                    data={"message": "형식 맞춰서 입력하세요! >>> YYYY-MM-DD"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                return (
+                    Article.objects.filter(created_at__date=valid_date)
+                    .select_related("author")
+                    .annotate(
+                        total_comments=Count("comments", distinct=True)
+                        + Count("comments__replies", distinct=True)
+                    )
                 )
-        return Response(
-            data={"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+
+            except ValueError:
+                raise ValidationError(
+                    {"message": "형식 맞춰서 입력하세요! >>> YYYY-MM-DD"}
+                )
+        raise ValidationError({"message": "날짜 검색하는 방법! >>> day: YYYY-MM-DD"})
 
 
 # 카테고리별 검색

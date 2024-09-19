@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Article, Category, Comment, News
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 
@@ -23,7 +22,7 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ("article", "author")
 
     def get_replies(self, obj):
-        replies = Comment.objects.filter(parent=obj)
+        replies = obj.replies.all()  # 미리 prefetch된 replies를 사용
         return CommentSerializer(replies, many=True).data
 
 
@@ -35,7 +34,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ArticleListSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source="author.nickname", read_only=True)
-    comments_count = serializers.IntegerField(source="comments.count", read_only=True)
+    comments_count = serializers.IntegerField(source="total_comments", read_only=True)
 
     class Meta:
         model = Article
@@ -60,10 +59,11 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source="author.nickname", read_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
     article_likes_count = serializers.IntegerField(
         source="article_likes.count", read_only=True
     )  # 게시글 좋아요 수
+    comments_count = serializers.IntegerField(source="total_comments", read_only=True)
+    comments = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Article

@@ -112,14 +112,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES":[
+    "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication"
     ],
     # 디폴트값을 "권한이 있을 때" 로 설정함
-    "DEFAULT_PERMISSION_CLASSES":["rest_framework.permissions.IsAuthenticated"
-    ],
-    "DEFAULT_PAGINATION_CLASS" : "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE" : 5
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 5,
 }
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
@@ -150,3 +149,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# silk
+if DEBUG:
+    INSTALLED_APPS += ["silk"]
+    MIDDLEWARE += ["silk.middleware.SilkyMiddleware"]
