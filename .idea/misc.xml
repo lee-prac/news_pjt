@@ -3,7 +3,7 @@
   <component name="Black">
     <option name="enabledOnSave" value="true" />
     <option name="pathToExecutable" value="C:\Users\user\AppData\Local\Programs\Python\Python312\Scripts\black.exe" />
-    <option name="sdkName" value="Python 3.12 (spino)" />
+    <option name="sdkName" value="Python 3.12 (nozonews)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (nozonews)" project-jdk-type="Python SDK" />
 </project>

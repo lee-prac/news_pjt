@@ -17,7 +17,6 @@ from .serializers import (
     NewsSerializer,
 )
 
-from rest_framework.decorators import action
 import requests
 from bs4 import BeautifulSoup
 
@@ -32,42 +31,45 @@ class ArticleListView(ListAPIView):
 
     def get_queryset(self):
         search = self.request.query_params.get("search")
+        queryset = Article.objects.select_related(
+            "author", "category"
+        ).prefetch_related("comments", "article_likes")
         if search:
-            return Article.objects.filter(
+            queryset = queryset.filter(
                 Q(title__icontains=search) | Q(content__icontains=search)
             )
-        return Article.objects.all()
+        return queryset
 
     def post(self, request):  # 글 작성 / 로그인 필요
         title = request.data.get("title")
         content = request.data.get("content")
+        category = request.data.get("category")
         image = request.data.get("image")
-        category_name = request.data.get("category")
 
         # 500에러 억울하니까 예외 처리 해줄게요!
         if not title:
             return Response(
-                data={"message": "제목은 필수 입력란 입니다!"},
+                data={"message": "title 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not content:
             return Response(
-                data={"message": "내용은 필수 입력란 입니다!"},
+                data={"message": "content 필수 입력란 입니다!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        category = Category.objects.filter(name=category_name).first()
+        category = Category.objects.filter(name=category).first()
         if not category:
             return Response(
-                data={"message": f"category >>> News, Show, Ask 셋중하나!"},
+                data={"message": "category 입력 >>> News, Show, Ask 셋중하나!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         article = Article.objects.create(
+            author=request.user,
             title=title,
             content=content,
-            image=image,
             category=category,
-            author=request.user,  # 요청한 사용자를 author로 설정
+            image=image,
         )
         serializer = ArticleDetailSerializer(article)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -77,7 +79,16 @@ class ArticleDetailView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request, pk):
-        article = get_object_or_404(Article, pk=pk)
+        article = (
+            Article.objects.select_related("author", "category")
+            .prefetch_related(
+                "comments__author",  # 댓글 작성자 미리 로드
+                "comments__replies__author",  # 대댓글이랑 대댓글 작성자 미리 로드
+                "comments__comment_likes",  # 댓글 좋아요 수 미리 로드
+                "comments__replies__comment_likes",  # 대댓글이랑 대댓글 좋아요 미리 로드
+            )
+            .get(pk=pk)
+        )
         serializer = ArticleDetailSerializer(article)
         return Response(serializer.data)
 

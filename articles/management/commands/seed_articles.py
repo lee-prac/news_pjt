@@ -10,7 +10,6 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Seed articles, comments, and likes with 10 users"
 
     def handle(self, *args, **kwargs):
         seeder = Seed.seeder()
@@ -45,16 +44,16 @@ class Command(BaseCommand):
                     name=random.choice(category_names)
                 ),
                 "author": lambda x: random.choice(users),
-                # 날짜: 최근 3일 중 하루
+                # 날짜: 최근 일주일 중 하루
                 "created_at": lambda x: timezone.now()
-                - timedelta(days=random.randint(0, 2)),
+                - timedelta(days=random.randint(0, 6)),
             },
         )
 
-        # Comment: 총 100개 (댓글, 대댓글)
+        # Comment: 총 150개 (댓글, 대댓글)
         seeder.add_entity(
             Comment,
-            100,
+            150,
             {
                 "article": lambda x: random.choice(Article.objects.all()),
                 "content": lambda x: seeder.faker.text(),
@@ -65,19 +64,19 @@ class Command(BaseCommand):
             },
         )
 
-        # 좋아요: 총 100개 (ArticleLike, CommentLike)
+        # 게시글 좋아요: 총 200개
         seeder.add_entity(
             ArticleLike,
-            100,
+            200,
             {
                 "article": lambda x: random.choice(Article.objects.all()),
                 "user": lambda x: random.choice(users),
             },
         )
-
+        # 댓글 좋아요: 총 500개
         seeder.add_entity(
             CommentLike,
-            100,
+            500,
             {
                 "comment": lambda x: random.choice(Comment.objects.all()),
                 "user": lambda x: random.choice(users),
@@ -86,9 +85,11 @@ class Command(BaseCommand):
 
         seeder.execute()
 
-        # 생성된 유저들의 nickname 출력하기(쓸거같음)
+        print("\n\n" + "-" * 50)
+        print(self.style.SUCCESS("방금 뜬 WARNING은 장고 기본 테이블 때문이니까 신경쓰지 마세요!!!!\n"))
+        print(self.style.SUCCESS("유저 10, 게시글 50, 댓글 150, 글좋아요 200, 댓글좋아요 500 생성 성공!!\n"))
+
+        # 생성된 유저들의 nickname 출력하기 (쓸거같음)
         created_users = User.objects.all()[:10]
-        for user in created_users:
-            self.stdout.write(
-                self.style.SUCCESS(f"오예성공! 닉네임 10개: {user.nickname}")
-            )
+        nicknames = [user.nickname for user in created_users]
+        self.stdout.write(self.style.SUCCESS(f"닉네임 10개: {', '.join(nicknames)}"))
