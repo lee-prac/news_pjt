@@ -126,8 +126,8 @@ Nozo 뉴스는 RESTful API 방식을 사용하여 사용자 인증, 뉴스 열�
 |30|ASK 목록|GET|/api/articles/ask/|all|
 |31|Show 목록|GET|/api/articles/show/|all|
 |32|카테고리 목록|GET|/api/articles/category/|all|
-|33|크롤링 기사 목록: /api/articles/news/|all|
-|34|크롤링 기사 상세: /api/articles/news/<int:pk>/|all|
+|33|크롤링 기사 목록|GET|/api/articles/news/|all|
+|34|크롤링 기사 상세|GET|/api/articles/news/<int:pk>/|all|
 
 ------
 
